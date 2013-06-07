@@ -1,0 +1,18 @@
+<package>
+  <description brief="raw_arm_cart_traj_control">
+
+     Arm Cartesian Trajectory Controller
+
+  </description>
+  <author>Teena Hassan</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url></url>
+  <depend package="roscpp"/>
+  <depend package="hbrs_arm_cart_control"/>
+  <depend package="sensor_msgs"/>
+  <depend package="tf" />
+  
+</package>
+
+
