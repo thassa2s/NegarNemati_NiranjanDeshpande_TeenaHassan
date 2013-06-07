@@ -7,10 +7,12 @@
 
 
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 
 geometry_msgs::Point goalPosition;
+geometry_msgs::TwistStamped cartesianVelocityMsg;
 
 std::string root_name = "DEFAULT_CHAIN_ROOT";
 std::string tooltip_name = "DEFAULT_CHAIN_TIP";
@@ -19,6 +21,24 @@ tf::TransformListener *tf_listener;
 
 bool active = false;
 ros::Time t_last_command;
+
+ros::Publisher cartesianVelocityPublisher;
+
+void computeVelocityVector(geometry_msgs::Point& currPosition) {
+            //std::strcpy(cartesianVelocityMsg.header.frame_id, root_name);
+            cartesianVelocityMsg.header.frame_id = root_name.c_str();
+            cartesianVelocityMsg.twist.linear.x = (goalPosition.x - currPosition.x);
+            cartesianVelocityMsg.twist.linear.y = (goalPosition.y - currPosition.y);    
+            cartesianVelocityMsg.twist.linear.z = (goalPosition.z - currPosition.z);
+            cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
+            std::cout << "Cartesian velocity vector: frame_id: " << cartesianVelocityMsg.header.frame_id << std::endl; 
+            std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
+            std::cout << "Cartesian velocity vector: angular vel: " << cartesianVelocityMsg.twist.angular.x << " " << cartesianVelocityMsg.twist.angular.y << " " << cartesianVelocityMsg.twist.angular.z << std::endl;
+            //cartesianVelocityMsg.header.frame_id = "/base_link";
+            //cartesianVelocityMsg.twist.linear.x = 0;
+            //cartesianVelocityMsg.twist.linear.y = 0;    
+            //cartesianVelocityMsg.twist.linear.z = 0.01;
+}
 
 void getCurrChainTipCartesianPosition(geometry_msgs::Point& currPosition) {
         //chain tip wrt root
@@ -45,26 +65,19 @@ void cartTrajGoalCallback(geometry_msgs::PoseStampedConstPtr trajGoalPosition) {
 	
         if ( !tf_listener ) return;
 	try {
-	    geometry_msgs::Vector3Stamped position_in;
-	    geometry_msgs::Vector3Stamped position_out;
-	    position_in.header = trajGoalPosition->header;
-	    position_in.vector.x = trajGoalPosition->pose.position.x;
-	    position_in.vector.y = trajGoalPosition->pose.position.y;
-	    position_in.vector.z = trajGoalPosition->pose.position.z;
 
-	    tf_listener->transformVector(root_name, position_in, position_out);
-
-            geometry_msgs::PointStamped position1_in;
-            geometry_msgs::PointStamped position1_out;
-            position1_in.header = trajGoalPosition->header;
-            position1_in.point  = trajGoalPosition->pose.position;
-	    tf_listener->transformPoint(root_name, position1_in, position1_out);
-	    std::cout << "Alternate method: Transformed goal position: root_name: " << root_name.c_str() << " x: " << position1_out.point.x << " y: " << position1_out.point.y << " z: " << position1_out.point.z << std::endl; 
-
-
-	    goalPosition.x = position_out.vector.x;
-	    goalPosition.y = position_out.vector.y;
-	    goalPosition.z = position_out.vector.z;
+            geometry_msgs::PointStamped position_in;
+            geometry_msgs::PointStamped position_out;
+            position_in.header = trajGoalPosition->header;
+            position_in.point  = trajGoalPosition->pose.position;
+	    tf_listener->transformPoint(root_name, position_in, position_out);
+	    
+            std::cout << "Alternate method: Transformed goal position: root_name: " << root_name.c_str() << " x: " << position_out.point.x << " y: " << position_out.point.y << " z: " << position_out.point.z << std::endl; 
+	    
+            goalPosition = position_out.point;
+	    //goalPosition.x = position_out.vector.x;
+	    //goalPosition.y = position_out.vector.y;
+	    //goalPosition.z = position_out.vector.z;
 
             t_last_command = ros::Time::now();
 	} catch(...) {
@@ -76,6 +89,9 @@ void cartTrajGoalCallback(geometry_msgs::PoseStampedConstPtr trajGoalPosition) {
         getCurrChainTipCartesianPosition(currPosition);
 
         std::cout << "Current chain tip position in Cartesian space is: x: " << currPosition.x <<" y: " << currPosition.y << " z: " << currPosition.z << std::endl;
+
+        computeVelocityVector(currPosition);
+        cartesianVelocityPublisher.publish(cartesianVelocityMsg);            
 
 	active = true;
 }
@@ -102,36 +118,34 @@ void cartTrajGoalCallback(geometry_msgs::PoseStampedConstPtr trajGoalPosition) {
 
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "simple_arm_cartesian_trajectory_control");
-	ros::NodeHandle node_handle("~");
+	ros::NodeHandle nodeHandle("~");
 	tf_listener = new tf::TransformListener();
 
         double rate = 50; //50Hz
 	
 	double default_speed = 0.01;
 	
-	int goal_pose_x = 1;
-	int goal_pose_y = 1;
-	int goal_pose_z = 1;
-	
 	//topic to publish to
-	std::string cart_vel_topic = "cartesian_velocity_command"; //change: read from param
+	std::string cart_vel_topic = "/hbrs_manipulation/arm_cart_control/cartesian_velocity_command"; //change: read from param
 	
 	//topic to subscribe to: a new topic cartesian_trajectory_control_goal_posiition //two arguments: frame_id and the position coordinates PoseStamped.
 	std::string cart_traj_goal_pos_topic =  "cartesian_trajectory_control_goal_posiition"; //change: read from param
 	
-         if (!node_handle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/root_name", root_name)) {
+         if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/root_name", root_name)) {
 		ROS_ERROR("No parameter for root_name specified");
 		return -1;
         }
 
-        if (!node_handle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/tip_name", tooltip_name)) {
+        if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/tip_name", tooltip_name)) {
 		ROS_ERROR("No parameter for tip_name specified");
 		return -1;
         }
 
-
-        //register subscriber
-	ros::Subscriber sub_cart_traj_goal = node_handle.subscribe(cart_traj_goal_pos_topic,
+        //publisher registration
+        cartesianVelocityPublisher=nodeHandle.advertise<geometry_msgs::TwistStamped>(cart_vel_topic, 1);
+     
+        //subscriber registration
+	ros::Subscriber sub_cart_traj_goal = nodeHandle.subscribe(cart_traj_goal_pos_topic,
 			1, cartTrajGoalCallback);
 			//loop with 50Hz
 
@@ -147,4 +161,4 @@ int main(int argc, char **argv) {
 
 		loop_rate.sleep();
 	}	
-}
+}	
