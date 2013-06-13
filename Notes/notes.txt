@@ -1,0 +1,15 @@
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+geometry_msgs/Twist twist
+  geometry_msgs/Vector3 linear
+    float64 x
+    float64 y
+    float64 z
+  geometry_msgs/Vector3 angular
+    float64 x
+    float64 y
+    float64 z
+
+rostopic pub -r 10 /hbrs_manipulation/arm_cart_control/cartesian_velocity_command geometry_msgs/TwistStamped '{header: {frame_id: /base_link}, twist: {linear: {z: 0.01}}}'

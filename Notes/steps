@@ -1,0 +1,35 @@
+Steps:
+Inputs: cartesian goal position, in which frame, what about goal orientation??
+
+Pre-processing: 
+1. compute the reachable Cartesian space; 
+2. Transform goal position to a fixed frame: use TF (Base link)
+3. Check if goal position is outside of the reachable workspace
+4. Compute the equation of the line joining current position and the goal position.
+5. If the goal position is outside the reachable workspace, choose a position on the line, at the end of the workspace. This would be the new goal position. Print appropriate output message.
+
+1. Compute the displacement vector (direction and magnitude)
+2. Divide the magnitude of the vector by the min/safe joint velocity. (max time taken)
+3. <Adjust speed if necessary> As we near the goal point, slow down.
+4. This is the magnitude of the Cartesian linear velocity vector. 
+5. (Only linear velocity considered)
+6. Using Jacobians, transform from Cartesian space to Joint space. <Done in Matthias' code>
+7. Subscribe to the TF topic 
+8. Check if we have drifted away from the intended path by more than a tolerance limit
+8.1 Retrieve the current position
+8.2 Substitute in the equation of the line 
+8.3 Check the resulting value.
+9. If we have drifted too much, recompute the path to the goal position, and update the velocities.
+   (Alternatively, choosen another interim goal... take care that this does not result in having too many interim goals)
+10. Check if we have reached the goal position within an allowed tolerance limit
+10.1 The closer we are to the goal, the Cartesian velocity should be reduced and finally zero.
+
+
+
+Negar: Code to compute equation of a line given two 3D Cartesian positions
+Niranjan: Convert Cartesian velocity of end-effector (tool-frame) w.r.t base link to individual joint velocities (Jacobian inverse in KDL) 
+Teena: Singularity analysis
+
+TO-DO:
+1. What code exists to check if a Cartesian point is in the workspace of youBot?
+2. How to read joint angles?
