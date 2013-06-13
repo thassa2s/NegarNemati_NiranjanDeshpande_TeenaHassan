@@ -8,6 +8,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <std_msgs/Bool.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 
@@ -29,9 +30,14 @@ ros::Publisher cartesianVelocityPublisher;
 geometry_msgs::Point lineSegmentStart;
 geometry_msgs::Vector3 directionVector;
 
+bool singularityOccurred = false;
+bool jointInterpolationMode = false;
+
 double distanceToGoal = 0.0;
 double goalTolerance = 0.005;
 double driftTolerance = 0.005;
+
+bool singularityIndication = false;
 
 void compute3DLineParameters()
 {
@@ -158,6 +164,12 @@ void cartTrajGoalCallback(geometry_msgs::PoseStampedConstPtr trajGoalPosition) {
         goalReached = false;
 }
 
+void singularityIndicatorCallback(std_msgs::Bool singularityIndication) {
+        std::cout << "Singularity indication received. " << std::endl;
+        setCartesianVelocityToZero();
+        singularityOccurred = singularityIndication.data;
+}
+
 /*bool watchdog() {
 
 	double watchdog_time = 0.3;
@@ -188,10 +200,11 @@ int main(int argc, char **argv) {
 	double default_speed = 0.01;
 	
 	//topic to publish to
-	std::string cart_vel_topic = "/hbrs_manipulation/arm_cart_control/cartesian_velocity_command"; //change: read from param
+	std::string cart_vel_topic = "cartesian_velocity_command"; 
 	
-	//topic to subscribe to: a new topic cartesian_trajectory_control_goal_posiition //two arguments: frame_id and the position coordinates PoseStamped.
-	std::string cart_traj_goal_pos_topic =  "cartesian_trajectory_control_goal_posiition"; //change: read from param
+	//topic to subscribe to: a new topic cartesian_trajectory_control_goal_position //two arguments: frame_id and the position coordinates PoseStamped.
+	std::string cart_traj_goal_pos_topic =  "cartesian_trajectory_control_goal_position"; 
+        std::string singularity_indicator_topic = "singularity_indicator";
 	
          if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/root_name", root_name)) {
 		ROS_ERROR("No parameter for root_name specified");
@@ -207,9 +220,14 @@ int main(int argc, char **argv) {
         cartesianVelocityPublisher=nodeHandle.advertise<geometry_msgs::TwistStamped>(cart_vel_topic, 1);
      
         //subscriber registration
-	ros::Subscriber sub_cart_traj_goal = nodeHandle.subscribe(cart_traj_goal_pos_topic,
+	ros::Subscriber cart_traj_goal_subscriber = nodeHandle.subscribe(cart_traj_goal_pos_topic,
 			1, cartTrajGoalCallback);
-			//loop with 50Hz
+
+        //subscriber registration
+	ros::Subscriber singularity_indicator_subscriber= nodeHandle.subscribe(singularity_indicator_topic,
+			1, singularityIndicatorCallback);
+
+	//loop with 50Hz
 
 	ros::Rate loop_rate(rate);
 
@@ -229,6 +247,12 @@ int main(int argc, char **argv) {
 	        { 
                      getCurrChainTipCartesianPosition(); 
                      updateDistanceToGoal();
+                     if ( singularityOccurred && jointInterpolationModeOn)
+                     {
+                          //drive for 2cm through joint interpolation
+                          
+                     }  
+                     else {
                      if ( distanceToGoal > goalTolerance )
                      {
                          if ( hasDriftedFromLine() )
@@ -251,6 +275,8 @@ int main(int argc, char **argv) {
                      }
                      std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
                      //check if we are near the goal position; if yes, slow down                         
+                  }
+
                 }
 		loop_rate.sleep();
 	}	
