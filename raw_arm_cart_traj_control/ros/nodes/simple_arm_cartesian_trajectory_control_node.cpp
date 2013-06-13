@@ -166,6 +166,7 @@ void singularityNotificationCallback(std_msgs::Bool singularityNotificationMsg) 
         std::cout << "Singularity notification received. " << std::endl;
         setCartesianVelocityToZero();
         atSingularity = singularityNotificationMsg.data;
+        jointInterpolationModeOn = true;
 }
 
 /*bool watchdog() {
@@ -247,7 +248,7 @@ int main(int argc, char **argv) {
                      updateDistanceToGoal();
                      if ( atSingularity && jointInterpolationModeOn )
                      {
-                          //drive for 2cm through joint interpolation
+                          //drive for 2cm through joint interpolation (joint position control)
                           
                      }  
                      else {
