@@ -42,6 +42,8 @@ brics_actuator::JointVelocities jointMsg;
 
 std::string root_name = "DEFAULT_CHAIN_ROOT";
 
+bool atSingularity = false;
+
 void jointstateCallback(sensor_msgs::JointStateConstPtr joints) {
 
 	for (unsigned i = 0; i < joints->position.size(); i++) {
@@ -97,6 +99,7 @@ void ccCallback(geometry_msgs::TwistStampedConstPtr desiredVelocity) {
 	  ROS_ERROR("Could not transform frames %s -> %s", desiredVelocity->header.frame_id.c_str(), root_name.c_str());
 	}
 	active = true;
+        atSingularity = false; //the occurrence of singularity should be rechecked in the event of receiving a new Cartesian velocity vector 
 }
 
 
@@ -163,6 +166,7 @@ void publishSingularityNotification(bool singularityOccurred) {
        std_msgs::Bool singularityNotificationMsg;
        singularityNotificationMsg.data = singularityOccurred;
        singularity_publisher.publish(singularityNotificationMsg);
+       atSingularity = true;
        //std::cout << "Singularity notification received." ;
 }
 
@@ -278,7 +282,7 @@ int main(int argc, char **argv) {
 
 		ros::spinOnce();
 
-		if(watchdog()) {
+		if(watchdog() && !atSingularity) {
 			control.process(1/rate, joint_positions, targetVelocity, cmd_velocities);
                         if ( control.isJointLimitsReached() ) {
                              stopMotion();
