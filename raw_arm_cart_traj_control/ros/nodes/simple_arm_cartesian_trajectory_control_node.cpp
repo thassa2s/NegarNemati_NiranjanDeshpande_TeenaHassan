@@ -30,14 +30,12 @@ ros::Publisher cartesianVelocityPublisher;
 geometry_msgs::Point lineSegmentStart;
 geometry_msgs::Vector3 directionVector;
 
-bool singularityOccurred = false;
-bool jointInterpolationMode = false;
+bool atSingularity = false;
+bool jointInterpolationModeOn = false;
 
 double distanceToGoal = 0.0;
 double goalTolerance = 0.005;
 double driftTolerance = 0.005;
-
-bool singularityIndication = false;
 
 void compute3DLineParameters()
 {
@@ -164,10 +162,10 @@ void cartTrajGoalCallback(geometry_msgs::PoseStampedConstPtr trajGoalPosition) {
         goalReached = false;
 }
 
-void singularityIndicatorCallback(std_msgs::Bool singularityIndication) {
-        std::cout << "Singularity indication received. " << std::endl;
+void singularityNotificationCallback(std_msgs::Bool singularityNotificationMsg) {
+        std::cout << "Singularity notification received. " << std::endl;
         setCartesianVelocityToZero();
-        singularityOccurred = singularityIndication.data;
+        atSingularity = singularityNotificationMsg.data;
 }
 
 /*bool watchdog() {
@@ -204,7 +202,7 @@ int main(int argc, char **argv) {
 	
 	//topic to subscribe to: a new topic cartesian_trajectory_control_goal_position //two arguments: frame_id and the position coordinates PoseStamped.
 	std::string cart_traj_goal_pos_topic =  "cartesian_trajectory_control_goal_position"; 
-        std::string singularity_indicator_topic = "singularity_indicator";
+        std::string singularity_notification_topic = "singularity_notification";
 	
          if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/root_name", root_name)) {
 		ROS_ERROR("No parameter for root_name specified");
@@ -224,8 +222,8 @@ int main(int argc, char **argv) {
 			1, cartTrajGoalCallback);
 
         //subscriber registration
-	ros::Subscriber singularity_indicator_subscriber= nodeHandle.subscribe(singularity_indicator_topic,
-			1, singularityIndicatorCallback);
+	ros::Subscriber singularity_notification_subscriber= nodeHandle.subscribe(singularity_notification_topic,
+			1, singularityNotificationCallback);
 
 	//loop with 50Hz
 
@@ -247,7 +245,7 @@ int main(int argc, char **argv) {
 	        { 
                      getCurrChainTipCartesianPosition(); 
                      updateDistanceToGoal();
-                     if ( singularityOccurred && jointInterpolationModeOn)
+                     if ( atSingularity && jointInterpolationModeOn )
                      {
                           //drive for 2cm through joint interpolation
                           

@@ -159,16 +159,16 @@ void publishJointVelocities(KDL::JntArrayVel& joint_velocities) {
 	cmd_vel_publisher.publish(jointMsg);
 }
 
-void publishSingularityIndication(bool singularityIndication) {
-       std_msgs::Bool singularityOccurredMsg;
-       singularityOccurredMsg.data = singularityIndication;
-       singularity_publisher.publish(singularityOccurredMsg);
-       std::cout << "Singularity indication received." ;
+void publishSingularityNotification(bool singularityOccurred) {
+       std_msgs::Bool singularityNotificationMsg;
+       singularityNotificationMsg.data = singularityOccurred;
+       singularity_publisher.publish(singularityNotificationMsg);
+       //std::cout << "Singularity notification received." ;
 }
 
 void stopMotion() {
 
-        std::cout << "stopMotion() called." << std::endl;
+        //std::cout << "stopMotion() called." << std::endl;
 	for (unsigned int i = 0; i < jointMsg.velocities.size(); i++) {
 		jointMsg.velocities[i].value = 0.0;
 
@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
  	std::string velocity_command_topic = "joint_velocity_command";
 	std::string joint_state_topic = "/joint_states";
 	std::string cart_control_topic = "cartesian_velocity_command";
-	std::string singularity_indicator_topic = "singularity_indicator";
+	std::string singularity_notification_topic = "singularity_notification";
 
 	std::string tooltip_name = "DEFAULT_CHAIN_TIP";
 
@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
 			velocity_command_topic, 1);
         //register publisher
 	singularity_publisher = node_handle.advertise<std_msgs::Bool>(
-			singularity_indicator_topic, 1);
+			singularity_notification_topic, 1);
 
 	//register subscriber
 	ros::Subscriber sub_joint_states = node_handle.subscribe(joint_state_topic,
@@ -282,11 +282,11 @@ int main(int argc, char **argv) {
 			control.process(1/rate, joint_positions, targetVelocity, cmd_velocities);
                         if ( control.isJointLimitsReached() ) {
                              stopMotion();
-                             publishSingularityIndication(true);
+                             publishSingularityNotification(true);
                         }
                         else {
 			     publishJointVelocities(cmd_velocities);
-                             publishSingularityIndication(false);
+                             publishSingularityNotification(false);
                         }
 		}
 

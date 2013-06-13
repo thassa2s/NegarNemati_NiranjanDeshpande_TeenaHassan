@@ -3,7 +3,7 @@
     <node pkg="raw_arm_cart_traj_control" type="simple_arm_cartesian_trajectory_control" ns="raw_manipulation" name="simple_arm_cartesian_trajectory_control" output="screen" respawn="false">
       <param name="root_name" value="arm_link_0"/>
       <param name="tip_name" value="gripper_finger_link_l"/>
-      <remap from="~singularity_indicator" to="/hbrs_manipulation/arm_cart_control/singularity_indicator"/>
+      <remap from="~singularity_notification" to="/hbrs_manipulation/arm_cart_control/singularity_notification"/>
       <remap from="~cartesian_velocity_command" to="/hbrs_manipulation/arm_cart_control/cartesian_velocity_command"/>
     </node>
 </launch>
