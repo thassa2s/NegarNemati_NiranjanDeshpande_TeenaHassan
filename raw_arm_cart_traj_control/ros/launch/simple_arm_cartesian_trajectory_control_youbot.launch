@@ -2,6 +2,6 @@
 <launch>
     <node pkg="raw_arm_cart_traj_control" type="simple_arm_cartesian_trajectory_control" ns="raw_manipulation" name="simple_arm_cartesian_trajectory_control" output="screen" respawn="false">
       <param name="root_name" value="arm_link_0"/>
-      <param name="tip_name" value="arm_link_5"/>
+      <param name="tip_name" value="gripper_finger_link_l"/>
     </node>
 </launch>
