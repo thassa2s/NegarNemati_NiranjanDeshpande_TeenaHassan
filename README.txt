@@ -13,5 +13,4 @@ README
 -- roslaunch youbot_description youbot_publisher.launch
 -- roslaunch hbrs_arm_cart_control arm_cartesian_control_youbot.launch
 -- roslaunch raw_arm_cart_traj_control simple_arm_cartesian_trajectory_control_youbot.launch
--- rosrun raw_arm_cart_traj_control simple_arm_ctesian_trajectory_control
--- rostopic pub /simple_arm_cartesian_trajectory_control/cartesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /base_link}, pose: {position: {x: 0.275, y: 0.000, z: 0.1}}}'
+-- rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/cartesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /base_link}, pose: {position: {x: 0.275, y: 0.000, z: 0.1}}}'
