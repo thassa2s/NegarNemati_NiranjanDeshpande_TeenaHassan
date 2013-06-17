@@ -284,14 +284,15 @@ int main(int argc, char **argv) {
 
 		if(watchdog() && !atSingularity) {
 			control.process(1/rate, joint_positions, targetVelocity, cmd_velocities);
-                        if ( control.isJointLimitsReached() ) {
+                       /* if ( control.isJointLimitsReached() ) {
                              stopMotion();
                              publishSingularityNotification(true);
                         }
                         else {
 			     publishJointVelocities(cmd_velocities);
                              publishSingularityNotification(false);
-                        }
+                        }*/
+			publishJointVelocities(cmd_velocities);
 		}
 
 		loop_rate.sleep();
