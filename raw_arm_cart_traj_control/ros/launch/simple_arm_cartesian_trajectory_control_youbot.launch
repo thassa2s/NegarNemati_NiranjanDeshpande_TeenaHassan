@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <launch>
+    <include file="$(find hbrs_arm_cart_control)/ros/launch/arm_cartesian_control_youbot.launch"/>
     <node pkg="raw_arm_cart_traj_control" type="simple_arm_cartesian_trajectory_control" ns="raw_manipulation" name="simple_arm_cartesian_trajectory_control" output="screen" respawn="false">
       <param name="root_name" value="arm_link_0"/>
-      <param name="tip_name" value="gripper_finger_link_l"/>
+      <param name="tip_name" value="arm_link_5"/>
       <remap from="~singularity_notification" to="/hbrs_manipulation/arm_cart_control/singularity_notification"/>
       <remap from="~cartesian_velocity_command" to="/hbrs_manipulation/arm_cart_control/cartesian_velocity_command"/>
     </node>
