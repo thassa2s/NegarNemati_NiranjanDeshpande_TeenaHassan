@@ -35,7 +35,7 @@ bool jointInterpolationModeOn = false;
 
 double distanceToGoal = 0.0;
 double goalTolerance = 0.005;
-double driftTolerance = 0.005;
+double driftTolerance = 0.0005;
 
 void compute3DLineParameters()
 {
@@ -91,13 +91,22 @@ void setCartesianVelocityToZero()
 
 void computeVelocityVector() {
             //std::strcpy(cartesianVelocityMsg.header.frame_id, root_name);
+            double normalizationConstant = 1.0;
             cartesianVelocityMsg.header.frame_id = root_name.c_str();
             cartesianVelocityMsg.twist.linear.x = (goalPosition.x - currPosition.x);
             cartesianVelocityMsg.twist.linear.y = (goalPosition.y - currPosition.y);    
             cartesianVelocityMsg.twist.linear.z = (goalPosition.z - currPosition.z);
-            cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
             std::cout << "Cartesian velocity vector: frame_id: " << cartesianVelocityMsg.header.frame_id << std::endl; 
+            cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
             std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
+            normalizationConstant = cartesianVelocityMsg.twist.linear.x * cartesianVelocityMsg.twist.linear.x;
+            normalizationConstant += cartesianVelocityMsg.twist.linear.y * cartesianVelocityMsg.twist.linear.y;
+            normalizationConstant += cartesianVelocityMsg.twist.linear.z * cartesianVelocityMsg.twist.linear.z ;
+            normalizationConstant = sqrt( normalizationConstant );
+            cartesianVelocityMsg.twist.linear.x /= normalizationConstant;
+            cartesianVelocityMsg.twist.linear.y /= normalizationConstant;
+            cartesianVelocityMsg.twist.linear.z /= normalizationConstant;
+            std::cout << "Normalized Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
             std::cout << "Cartesian velocity vector: angular vel: " << cartesianVelocityMsg.twist.angular.x << " " << cartesianVelocityMsg.twist.angular.y << " " << cartesianVelocityMsg.twist.angular.z << std::endl;
             //cartesianVelocityMsg.header.frame_id = "/base_link";
             //cartesianVelocityMsg.twist.linear.x = 0;
@@ -168,26 +177,6 @@ void singularityNotificationCallback(std_msgs::Bool singularityNotificationMsg) 
         atSingularity = singularityNotificationMsg.data;
         jointInterpolationModeOn = true;
 }
-
-/*bool watchdog() {
-
-	double watchdog_time = 0.3;
-	if (active==false) {
-		return false;
-	}
-
-	ros::Time now = ros::Time::now();
-
-	ros::Duration time = (now - t_last_command);
-
-	if ( time > ros::Duration(watchdog_time) ) {
-		active = false;
-		stopMotion();
-		return false;
-	}
-
-	return true;
-}*/
 
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "simple_arm_cartesian_trajectory_control");
