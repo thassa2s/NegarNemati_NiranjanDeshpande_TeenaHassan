@@ -6,15 +6,23 @@
  */
 
 
-#include <geometry_msgs/PoseStamped.h>
+//#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/Point.h>
 #include <std_msgs/Bool.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 
-geometry_msgs::Point goalPosition;
+#define MAX_SIZE_GOAL_LIST 10
+
+geometry_msgs::Point goalPositionList[MAX_SIZE_GOAL_LIST];
 geometry_msgs::Point currPosition;
 geometry_msgs::TwistStamped cartesianVelocityMsg;
+
+unsigned int numberOfGoalPositions = 0;
+unsigned int currentGoalIndex = 0;
+unsigned int maxNumberOfGoalPositions = MAX_SIZE_GOAL_LIST;
 
 std::string root_name = "DEFAULT_CHAIN_ROOT";
 std::string tooltip_name = "DEFAULT_CHAIN_TIP";
@@ -40,9 +48,9 @@ double driftTolerance = 0.0005;
 void compute3DLineParameters()
 {
   lineSegmentStart=currPosition;
-  directionVector.x=goalPosition.x-lineSegmentStart.x;
-   directionVector.y=goalPosition.y-lineSegmentStart.y;
-    directionVector.z=goalPosition.z-lineSegmentStart.z;
+  directionVector.x=goalPositionList[currentGoalIndex].x-lineSegmentStart.x;
+  directionVector.y=goalPositionList[currentGoalIndex].y-lineSegmentStart.y;
+  directionVector.z=goalPositionList[currentGoalIndex].z-lineSegmentStart.z;
 }
 
 double computeDistanceFrom3DLine(geometry_msgs::Point p)
@@ -74,9 +82,9 @@ bool hasDriftedFromLine()
 void updateDistanceToGoal()
 {
   geometry_msgs::Vector3 displacement;
-  displacement.x = goalPosition.x-currPosition.x;
-  displacement.y = goalPosition.y-currPosition.y;
-  displacement.z = goalPosition.z-currPosition.z;
+  displacement.x = goalPositionList[currentGoalIndex].x-currPosition.x;
+  displacement.y = goalPositionList[currentGoalIndex].y-currPosition.y;
+  displacement.z = goalPositionList[currentGoalIndex].z-currPosition.z;
   distanceToGoal=sqrt(displacement.x * displacement.x + displacement.y * displacement.y + displacement.z * displacement.z);
   std::cout << "Distance to goal: " << distanceToGoal << std::endl;
 }
@@ -93,9 +101,9 @@ void computeVelocityVector() {
             //std::strcpy(cartesianVelocityMsg.header.frame_id, root_name);
             double normalizationConstant = 1.0;
             cartesianVelocityMsg.header.frame_id = root_name.c_str();
-            cartesianVelocityMsg.twist.linear.x = (goalPosition.x - currPosition.x);
-            cartesianVelocityMsg.twist.linear.y = (goalPosition.y - currPosition.y);    
-            cartesianVelocityMsg.twist.linear.z = (goalPosition.z - currPosition.z);
+            cartesianVelocityMsg.twist.linear.x = (goalPositionList[currentGoalIndex].x - currPosition.x);
+            cartesianVelocityMsg.twist.linear.y = (goalPositionList[currentGoalIndex].y - currPosition.y);    
+            cartesianVelocityMsg.twist.linear.z = (goalPositionList[currentGoalIndex].z - currPosition.z);
             std::cout << "Cartesian velocity vector: frame_id: " << cartesianVelocityMsg.header.frame_id << std::endl; 
             cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
             std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
@@ -130,45 +138,59 @@ void getCurrChainTipCartesianPosition() {
             currPosition.z = origin.getZ();
             
             std::cout << "Current position: " << currPosition.x <<", " << currPosition.y << ", " << currPosition.z << std::endl;
-            std::cout << "Goal position: " << goalPosition.x <<", " << goalPosition.y << ", " << goalPosition.z << std::endl;
+            std::cout << "Goal position: " << goalPositionList[currentGoalIndex].x <<", " << goalPositionList[currentGoalIndex].y << ", " << goalPositionList[currentGoalIndex].z << std::endl;
 	} catch(...) {
             std::cout << "Could not get current chain tip position in Cartesian space:" << std::endl; }
          
 }
 
-void cartTrajGoalCallback(geometry_msgs::PoseStampedConstPtr trajGoalPosition) {
-        std::cout << "Trajectory goal position received. Frame: " << trajGoalPosition->header.frame_id << " x: " << trajGoalPosition->pose.position.x << " y: " << trajGoalPosition->pose.position.y << " z: " << trajGoalPosition->pose.position.z << std::endl;
+void cartTrajGoalCallback(geometry_msgs::PoseArray trajGoalPositionArray) {
+        std::cout << "List of trajectory goal positions received. Frame: " << trajGoalPositionArray.header.frame_id << std::endl;
+        numberOfGoalPositions = std::ceil(sizeof(trajGoalPositionArray.poses)/(double)(sizeof(geometry_msgs::Point)));
+        std::cout << "Number of poses: " << numberOfGoalPositions << " sizeof array: " << sizeof(trajGoalPositionArray.poses) << " size of point: " << sizeof(geometry_msgs::Point) << std::endl;
+        if ( numberOfGoalPositions > maxNumberOfGoalPositions ) 
+        {   std::cout << "Only the first " << maxNumberOfGoalPositions << " goal positions will be processed." << std::endl;
+            numberOfGoalPositions = maxNumberOfGoalPositions;
+        }
+        unsigned int i;
+        for ( i = 0; i < numberOfGoalPositions; i++ ) {
+            std::cout << " x: " << trajGoalPositionArray.poses[i].position.x << " y: " << trajGoalPositionArray.poses[i].position.y << " z: " << trajGoalPositionArray.poses[i].position.z << std::endl;
 	
-        if ( !tf_listener ) return;
-	try {
+            if ( !tf_listener ) return;
+	    try {
 
-            geometry_msgs::PointStamped position_in;
-            geometry_msgs::PointStamped position_out;
-            position_in.header = trajGoalPosition->header;
-            position_in.point  = trajGoalPosition->pose.position;
-	    tf_listener->transformPoint(root_name, position_in, position_out);
+                geometry_msgs::PointStamped position_in;
+                geometry_msgs::PointStamped position_out;
+                position_in.header = trajGoalPositionArray.header;
+                position_in.point  = trajGoalPositionArray.poses[i].position;
+	        tf_listener->transformPoint(root_name, position_in, position_out);
 	    
-            std::cout << "Alternate method: Transformed goal position: root_name: " << root_name.c_str() << " x: " << position_out.point.x << " y: " << position_out.point.y << " z: " << position_out.point.z << std::endl; 
+                std::cout << "Alternate method: Transformed goal position: root_name: " << root_name.c_str() << " x: " << position_out.point.x << " y: " << position_out.point.y << " z: " << position_out.point.z << std::endl; 
 	    
-            goalPosition = position_out.point;
-	    //goalPosition.x = position_out.vector.x;
-	    //goalPosition.y = position_out.vector.y;
-	    //goalPosition.z = position_out.vector.z;
+                goalPositionList[i] = position_out.point;
+	        //goalPosition.x = position_out.vector.x;
+	        //goalPosition.y = position_out.vector.y;
+	        //goalPosition.z = position_out.vector.z;
 
-            t_last_command = ros::Time::now();
-	} catch(...) {
-	  ROS_ERROR("Could not transform frames %s -> %s", trajGoalPosition->header.frame_id.c_str(), root_name.c_str());}
-	std::cout << "Transformed goal position: root_name: " << root_name.c_str() << " x: " << goalPosition.x << " y: " << goalPosition.y << " z: " << goalPosition.z << std::endl; 
+                t_last_command = ros::Time::now();
+	    } catch(...) {
+	    ROS_ERROR("Could not transform frames %s -> %s", trajGoalPositionArray.header.frame_id.c_str(), root_name.c_str());}
+	    std::cout << "Transformed goal position: root_name: " << root_name.c_str() << " x: " << goalPositionList[i].x << " y: " << goalPositionList[i].y << " z: " << goalPositionList[i].z << std::endl; 
+        }
+        //numberOfGoalPositions = i;
+        if( numberOfGoalPositions > 0 )
+        {
+            currentGoalIndex = 0;
+	    //What is the current pose wrt root?
+            getCurrChainTipCartesianPosition();
 
-	//What is the current pose wrt root?
-        getCurrChainTipCartesianPosition();
-
-        std::cout << "Current chain tip position in Cartesian space is: x: " << currPosition.x <<" y: " << currPosition.y << " z: " << currPosition.z << std::endl;
-        compute3DLineParameters(); //Line from currPosition to goalPosition
-        computeVelocityVector();   
-
-	goalReceived = true;
-        goalReached = false;
+            std::cout << "Current chain tip position in Cartesian space is: x: " << currPosition.x <<" y: " << currPosition.y << " z: " << currPosition.z << std::endl;
+            compute3DLineParameters(); //Line from currPosition to goalPosition
+            computeVelocityVector();   
+            
+	    goalReceived = true;
+            goalReached = false;
+        }
 }
 
 void singularityNotificationCallback(std_msgs::Bool singularityNotificationMsg) {
@@ -215,6 +237,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber singularity_notification_subscriber= nodeHandle.subscribe(singularity_notification_topic,
 			1, singularityNotificationCallback);
 
+        //unsigned int goalIndex = 0;
 	//loop with 50Hz
 
 	ros::Rate loop_rate(rate);
@@ -255,17 +278,32 @@ int main(int argc, char **argv) {
                      else
 		     {
                          goalReached = true;
-                         goalReceived = false;
+                         //goalReceived = false;
                          //stop motion
                          setCartesianVelocityToZero();
                          cartesianVelocityPublisher.publish(cartesianVelocityMsg);  
                          std::cout << "Goal Reached... Stopping motion..." << std::endl;    
                      }
                      std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
+                     std::cout << "Goal index: " << currentGoalIndex << ". No. of goals: " << numberOfGoalPositions << std::endl;
                      //check if we are near the goal position; if yes, slow down                         
                   }
-
-                }
+                  }
+                  else if (goalReceived && goalReached)
+                  {
+                     goalReached = false;
+                     currentGoalIndex++;
+                     if ( currentGoalIndex == numberOfGoalPositions )
+                         goalReceived = false;
+                     else
+                     {  
+                         getCurrChainTipCartesianPosition(); 
+                         compute3DLineParameters(); //Line from currPosition to goalPosition
+                         computeVelocityVector();    
+                         cartesianVelocityPublisher.publish(cartesianVelocityMsg);  
+                     }
+                  }
+                
 		loop_rate.sleep();
 	}	
 }	
