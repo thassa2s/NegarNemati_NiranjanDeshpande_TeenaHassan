@@ -1,0 +1,28 @@
+Pre-grasp position (pre-grasp laying) arm_link_5 wrt base_link
+===============================================================
+
+- Translation: [0.539, 0.011, 0.170]
+- Rotation: in Quaternion [-0.059, 0.998, -0.000, 0.008]
+            in RPY [-3.140, 0.016, -3.023]
+
+Pre-grasp position (pre-grasp laying) arm_link_5 wrt arm_link_0
+===============================================================
+
+At time 1371569585.060
+- Translation: [0.316, 0.008, 0.086]
+- Rotation: in Quaternion [-0.059, 0.998, -0.000, 0.008]
+            in RPY [-3.140, 0.016, -3.023]
+
+Working point pairs
+===================
+
+( 0.3, y: 0.08, z: 0.086, 0.216, y: 0.08, z: 0.086)
+
+
+Commands
+========
+
+roslaunch raw_bringup robot.launch 
+roslaunch raw_bringup dashboard.launch 
+roslaunch raw_arm_cart_traj_control simple_arm_cartesian_trajectory_control_youbot.launch
+<Publish goal positions>

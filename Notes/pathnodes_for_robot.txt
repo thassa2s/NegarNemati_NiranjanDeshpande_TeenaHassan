@@ -1,0 +1,44 @@
+teenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/cartesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.316, y: 0.03, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.316, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.316, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.430, y: 0.05, z: 0.029}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.316, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.316, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.316, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.316, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.3, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.3, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.3, y: 0.02, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.3, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.02, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.08, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.216, y: 0.02, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.3, y: 0.02, z: 0.086}}}'
+publishing and latching message. Press ctrl-C to terminate
+^Cteenarahul@teenarahul-Dell-System-XPS-15Z:~$ rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/caesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /arm_link_0}, pose: {position: {x: 0.3, y: 0.08, z: 0.086}}}'
+
