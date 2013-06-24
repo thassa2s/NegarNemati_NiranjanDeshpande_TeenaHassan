@@ -1,8 +1,9 @@
 README
 ------
 
-- Copy the folder raw_arm_cart_traj_control to the folder raw_manipulation in RoboCupAt Work.
-- cd to raw_manipulation/raw_arm_cart_traj_control 
+- Inside the raw_manipulation directory of RoboCupAtWork repository, execute roscreate-pkg raw_arm_cart_traj_control std_msgs rospy roscpp hbrs_arm_cart_control
+- Copy the contents of the folder raw_arm_cart_traj_control to the newly created package.
+- cd to raw_arm_cart_traj_control 
 - mkdir build
 - cd build
 - cmake ..
@@ -11,6 +12,7 @@ README
 - After build is successful:
 -- roslaunch youbot_description youbot_description.launch
 -- roslaunch youbot_description youbot_publisher.launch
--- roslaunch hbrs_arm_cart_control arm_cartesian_control_youbot.launch
 -- roslaunch raw_arm_cart_traj_control simple_arm_cartesian_trajectory_control_youbot.launch
--- rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/cartesian_trajectory_control_goal_position geometry_msgs/PoseStamped '{header: {frame_id: /base_link}, pose: {position: {x: 0.275, y: 0.000, z: 0.1}}}'
+-- rostopic pub /raw_manipulation/simple_arm_cartesian_trajectory_control/cartesian_trajectory_control_goal_position geometry_msgs/PoseArray '{header: {frame_id: /arm_link_0}, poses: [{position: {x: 0.2, y: 0.08, z: 0.086}}, {position: {x: 0.3, y: 0, z: 0.086}}, {position: {x: 0.3, y: 0.08, z: 0.086}}]}'
+
+
