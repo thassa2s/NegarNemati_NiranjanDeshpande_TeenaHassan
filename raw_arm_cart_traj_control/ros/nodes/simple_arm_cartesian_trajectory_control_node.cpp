@@ -5,11 +5,10 @@
  *      Author: negar, niranjan, teena
  */
 
-
-//#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Vector3.h>
 #include <std_msgs/Bool.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
@@ -29,21 +28,20 @@ std::string tooltip_name = "DEFAULT_CHAIN_TIP";
 
 tf::TransformListener *tf_listener;
 
-bool goalReceived = false;
-bool goalReached = true;
-ros::Time t_last_command;
-
-ros::Publisher cartesianVelocityPublisher;
-
 geometry_msgs::Point lineSegmentStart;
 geometry_msgs::Vector3 directionVector;
 
+double distanceToGoal = 0.0;
+double goalTolerance = 0.003;
+double driftTolerance = 0.0005;
+
 bool atSingularity = false;
 bool jointInterpolationModeOn = false;
+bool goalReceived = false;
+bool goalReached = true;
 
-double distanceToGoal = 0.0;
-double goalTolerance = 0.005;
-double driftTolerance = 0.0005;
+ros::Publisher cartesianVelocityPublisher;
+ros::Time t_last_command;
 
 void compute3DLineParameters()
 {
@@ -66,15 +64,15 @@ double computeDistanceFrom3DLine(geometry_msgs::Point p)
   start2pVectorLengthSq=start2pVector.x*start2pVector.x+start2pVector.y*start2pVector.y+start2pVector.z*start2pVector.z;
   dotProduct=directionVector.x*start2pVector.x+directionVector.y*start2pVector.y+directionVector.z*start2pVector.z;
   squaredDistance=((start2pVectorLengthSq*directionVectorLengthSq)-(dotProduct*dotProduct))/directionVectorLengthSq;
-  return sqrt(squaredDistance);
+  return sqrt( squaredDistance );
 }
   
 bool hasDriftedFromLine()
 {
   double distance;
-  distance=computeDistanceFrom3DLine(currPosition);
+  distance=computeDistanceFrom3DLine( currPosition );
   std::cout << "Distance from line: " << distance << std::endl;
-  if (distance > driftTolerance)
+  if ( distance > driftTolerance )
     return true;
   return false;
 }
@@ -91,219 +89,187 @@ void updateDistanceToGoal()
 
 void setCartesianVelocityToZero()
 {
-            cartesianVelocityMsg.header.frame_id = root_name.c_str();
-            cartesianVelocityMsg.twist.linear.x = cartesianVelocityMsg.twist.linear.y = cartesianVelocityMsg.twist.linear.z = 0;
-            cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
-
+  cartesianVelocityMsg.header.frame_id = root_name.c_str();
+  cartesianVelocityMsg.twist.linear.x = cartesianVelocityMsg.twist.linear.y = cartesianVelocityMsg.twist.linear.z = 0;
+  cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
 }
 
-void computeVelocityVector() {
-            //std::strcpy(cartesianVelocityMsg.header.frame_id, root_name);
-            double normalizationConstant = 1.0;
-            cartesianVelocityMsg.header.frame_id = root_name.c_str();
-            cartesianVelocityMsg.twist.linear.x = (goalPositionList[currentGoalIndex].x - currPosition.x);
-            cartesianVelocityMsg.twist.linear.y = (goalPositionList[currentGoalIndex].y - currPosition.y);    
-            cartesianVelocityMsg.twist.linear.z = (goalPositionList[currentGoalIndex].z - currPosition.z);
-            std::cout << "Cartesian velocity vector: frame_id: " << cartesianVelocityMsg.header.frame_id << std::endl; 
-            cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
-            std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
-            normalizationConstant = cartesianVelocityMsg.twist.linear.x * cartesianVelocityMsg.twist.linear.x;
-            normalizationConstant += cartesianVelocityMsg.twist.linear.y * cartesianVelocityMsg.twist.linear.y;
-            normalizationConstant += cartesianVelocityMsg.twist.linear.z * cartesianVelocityMsg.twist.linear.z ;
-            normalizationConstant = sqrt( normalizationConstant );
-            cartesianVelocityMsg.twist.linear.x /= normalizationConstant;
-            cartesianVelocityMsg.twist.linear.y /= normalizationConstant;
-            cartesianVelocityMsg.twist.linear.z /= normalizationConstant;
-            std::cout << "Normalized Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
-            std::cout << "Cartesian velocity vector: angular vel: " << cartesianVelocityMsg.twist.angular.x << " " << cartesianVelocityMsg.twist.angular.y << " " << cartesianVelocityMsg.twist.angular.z << std::endl;
-            //cartesianVelocityMsg.header.frame_id = "/base_link";
-            //cartesianVelocityMsg.twist.linear.x = 0;
-            //cartesianVelocityMsg.twist.linear.y = 0;    
-            //cartesianVelocityMsg.twist.linear.z = 0.01;
+void normalize3DVector( geometry_msgs:: Vector3 &vector )
+{
+  double normalizationConstant = 1.0;
+  normalizationConstant = vector.x * vector.x + vector.y * vector.y + vector.z * vector.z ;
+  normalizationConstant = sqrt( normalizationConstant );
+  vector.x /= normalizationConstant;
+  vector.y /= normalizationConstant;
+  vector.z /= normalizationConstant;
 }
 
-void getCurrChainTipCartesianPosition() {
-        //chain tip wrt root
-        if ( !tf_listener ) return;
-        try {
-	    tf::StampedTransform stampedTransform;
-
-            std::cout << "Finding description of frame " << tooltip_name.c_str() << " relative to frame " << root_name.c_str() << std::endl;
-
-            tf_listener->lookupTransform(root_name, tooltip_name, ros::Time(), stampedTransform);
-
-            tf::Vector3 origin = stampedTransform.getOrigin();
-	    currPosition.x = origin.getX();
-            currPosition.y = origin.getY();
-            currPosition.z = origin.getZ();
-            
-            std::cout << "Current position: " << currPosition.x <<", " << currPosition.y << ", " << currPosition.z << std::endl;
-            std::cout << "Goal position: " << goalPositionList[currentGoalIndex].x <<", " << goalPositionList[currentGoalIndex].y << ", " << goalPositionList[currentGoalIndex].z << std::endl;
-	} catch(...) {
-            std::cout << "Could not get current chain tip position in Cartesian space:" << std::endl; }
-         
+void computeVelocityVector() 
+{
+  cartesianVelocityMsg.header.frame_id = root_name.c_str();
+  cartesianVelocityMsg.twist.linear.x = (goalPositionList[currentGoalIndex].x - currPosition.x);
+  cartesianVelocityMsg.twist.linear.y = (goalPositionList[currentGoalIndex].y - currPosition.y);    
+  cartesianVelocityMsg.twist.linear.z = (goalPositionList[currentGoalIndex].z - currPosition.z);
+  cartesianVelocityMsg.twist.angular.x = cartesianVelocityMsg.twist.angular.y = cartesianVelocityMsg.twist.angular.z = 0;
+  
+  std::cout << "Cartesian velocity vector: frame_id: " << cartesianVelocityMsg.header.frame_id << std::endl; 
+  std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
+  
+  normalize3DVector( cartesianVelocityMsg.twist.linear );
+  
+  std::cout << "Normalized vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
+  std::cout << "Cartesian velocity vector: angular vel: " << cartesianVelocityMsg.twist.angular.x << " " << cartesianVelocityMsg.twist.angular.y << " " << cartesianVelocityMsg.twist.angular.z << std::endl;
 }
 
-void cartTrajGoalCallback(geometry_msgs::PoseArray trajGoalPositionArray) {
-        std::cout << "List of trajectory goal positions received. Frame: " << trajGoalPositionArray.header.frame_id << std::endl;
-        numberOfGoalPositions = std::ceil(sizeof(trajGoalPositionArray.poses)/(double)(sizeof(geometry_msgs::Point)));
-        std::cout << "Number of poses: " << numberOfGoalPositions << " sizeof array: " << sizeof(trajGoalPositionArray.poses) << " size of point: " << sizeof(geometry_msgs::Point) << std::endl;
-        if ( numberOfGoalPositions > maxNumberOfGoalPositions ) 
-        {   std::cout << "Only the first " << maxNumberOfGoalPositions << " goal positions will be processed." << std::endl;
-            numberOfGoalPositions = maxNumberOfGoalPositions;
-        }
-        unsigned int i;
-        for ( i = 0; i < numberOfGoalPositions; i++ ) {
-            std::cout << " x: " << trajGoalPositionArray.poses[i].position.x << " y: " << trajGoalPositionArray.poses[i].position.y << " z: " << trajGoalPositionArray.poses[i].position.z << std::endl;
+void getCurrChainTipCartesianPosition() 
+{
+  if ( !tf_listener ) 
+    return;
+  try 
+  {
+    tf::StampedTransform stampedTransform;
+    std::cout << "Finding description of frame " << tooltip_name.c_str() << " relative to frame " << root_name.c_str() << std::endl;
+    tf_listener->lookupTransform(root_name, tooltip_name, ros::Time(), stampedTransform);
+    tf::Vector3 origin = stampedTransform.getOrigin();
+    currPosition.x = origin.getX();
+    currPosition.y = origin.getY();
+    currPosition.z = origin.getZ();
+    std::cout << "Current position: " << currPosition.x <<", " << currPosition.y << ", " << currPosition.z << std::endl;
+  } catch(...) 
+    {  ROS_ERROR( "Could not get current chain tip position in Cartesian space:" );  }         
+}
+
+void cartTrajGoalCallback( geometry_msgs::PoseArray trajGoalPositionArray ) 
+{
+  unsigned int i;
+  std::cout << "List of trajectory goal positions received. Frame: " << trajGoalPositionArray.header.frame_id << std::endl;
+  numberOfGoalPositions = trajGoalPositionArray.poses.size();
+  std::cout << "Number of poses: " << numberOfGoalPositions << std::endl;
+  if ( numberOfGoalPositions > maxNumberOfGoalPositions ) 
+  {   
+    std::cout << "Only the first " << maxNumberOfGoalPositions << " goal positions will be processed." << std::endl;
+    numberOfGoalPositions = maxNumberOfGoalPositions;
+  }
+  for ( i = 0; i < numberOfGoalPositions; i++ ) 
+  {
+    std::cout << " x: " << trajGoalPositionArray.poses[i].position.x << " y: " << trajGoalPositionArray.poses[i].position.y << " z: " << trajGoalPositionArray.poses[i].position.z << std::endl;
+    if ( !tf_listener ) 
+      return;
+    try 
+    {
+      geometry_msgs::PointStamped position_in;
+      geometry_msgs::PointStamped position_out;
+      position_in.header = trajGoalPositionArray.header;
+      position_in.point  = trajGoalPositionArray.poses[i].position;
+      tf_listener->transformPoint(root_name, position_in, position_out);
+      goalPositionList[i] = position_out.point;
+      std::cout << "Transformed goal position: root_name: " << root_name.c_str() << " x: " << goalPositionList[i].x << " y: " << goalPositionList[i].y << " z: " << goalPositionList[i].z << std::endl; 
+      t_last_command = ros::Time::now();
+    } catch(...) 
+      {  ROS_ERROR( "Frame transformation %s to %s failed.", trajGoalPositionArray.header.frame_id.c_str(), root_name.c_str() );  }
+  }
+  if( numberOfGoalPositions > 0 )
+  {
+    currentGoalIndex = 0;
+    getCurrChainTipCartesianPosition();
+    compute3DLineParameters();
+    computeVelocityVector();   
+    goalReceived = true;
+    goalReached = false;
+  }
+}
+
+void singularityNotificationCallback( std_msgs::Bool singularityNotificationMsg ) 
+{
+  std::cout << "Singularity notification received. " << std::endl;
+  setCartesianVelocityToZero();
+  atSingularity = singularityNotificationMsg.data;
+  jointInterpolationModeOn = true;
+}
+
+int main(int argc, char **argv) 
+{
+  ros::init(argc, argv, "simple_arm_cartesian_trajectory_control");
+  ros::NodeHandle nodeHandle("~");
+  tf_listener = new tf::TransformListener();
+  double rate = 50; //50Hz
+  ros::Rate loop_rate(rate);
+
+  if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/root_name", root_name)) 
+  {
+    ROS_ERROR("Parameter root_name not specified");
+    return -1;
+  }
+  if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/tip_name", tooltip_name)) 
+  {
+    ROS_ERROR("No parameter for tip_name specified");
+    return -1;
+  }
+
+  //topic to publish to
+  std::string cart_vel_topic = "cartesian_velocity_command"; 
+  //topics to subscribe to
+  std::string cart_traj_goal_pos_topic =  "cartesian_trajectory_control_goal_position"; 
+  std::string singularity_notification_topic = "singularity_notification";
 	
-            if ( !tf_listener ) return;
-	    try {
-
-                geometry_msgs::PointStamped position_in;
-                geometry_msgs::PointStamped position_out;
-                position_in.header = trajGoalPositionArray.header;
-                position_in.point  = trajGoalPositionArray.poses[i].position;
-	        tf_listener->transformPoint(root_name, position_in, position_out);
-	    
-                std::cout << "Alternate method: Transformed goal position: root_name: " << root_name.c_str() << " x: " << position_out.point.x << " y: " << position_out.point.y << " z: " << position_out.point.z << std::endl; 
-	    
-                goalPositionList[i] = position_out.point;
-	        //goalPosition.x = position_out.vector.x;
-	        //goalPosition.y = position_out.vector.y;
-	        //goalPosition.z = position_out.vector.z;
-
-                t_last_command = ros::Time::now();
-	    } catch(...) {
-	    ROS_ERROR("Could not transform frames %s -> %s", trajGoalPositionArray.header.frame_id.c_str(), root_name.c_str());}
-	    std::cout << "Transformed goal position: root_name: " << root_name.c_str() << " x: " << goalPositionList[i].x << " y: " << goalPositionList[i].y << " z: " << goalPositionList[i].z << std::endl; 
-        }
-        //numberOfGoalPositions = i;
-        if( numberOfGoalPositions > 0 )
+  //publisher registration
+  cartesianVelocityPublisher=nodeHandle.advertise<geometry_msgs::TwistStamped>(cart_vel_topic, 1);
+  //subscriber registration
+  ros::Subscriber cart_traj_goal_subscriber = nodeHandle.subscribe(cart_traj_goal_pos_topic, 1, cartTrajGoalCallback);
+  //subscriber registration
+  ros::Subscriber singularity_notification_subscriber= nodeHandle.subscribe(singularity_notification_topic, 1, singularityNotificationCallback);
+  
+  while (ros::ok()) 
+  {
+    ros::spinOnce();
+    if (goalReceived && !goalReached)
+    { 
+      getCurrChainTipCartesianPosition(); 
+      updateDistanceToGoal();
+      std::cout << "Goal position: " << goalPositionList[currentGoalIndex].x <<", " << goalPositionList[currentGoalIndex].y << ", " << goalPositionList[currentGoalIndex].z << std::endl;
+      if ( atSingularity && jointInterpolationModeOn )
+      {
+        //drive for 2cm through joint interpolation (joint position control)
+      }  
+      else 
+      {
+        if ( distanceToGoal > goalTolerance )
         {
-            currentGoalIndex = 0;
-	    //What is the current pose wrt root?
-            getCurrChainTipCartesianPosition();
-
-            std::cout << "Current chain tip position in Cartesian space is: x: " << currPosition.x <<" y: " << currPosition.y << " z: " << currPosition.z << std::endl;
-            compute3DLineParameters(); //Line from currPosition to goalPosition
-            computeVelocityVector();   
-            
-	    goalReceived = true;
-            goalReached = false;
+          if ( hasDriftedFromLine() )
+          {
+            compute3DLineParameters();
+            computeVelocityVector();  
+            std::cout << "Drifted too much from line. Recomputed trajectory and Cartesian velocities..." << std::endl;    
+          }
+          //publish cartesian velocity
+          cartesianVelocityPublisher.publish(cartesianVelocityMsg);     
         }
-}
-
-void singularityNotificationCallback(std_msgs::Bool singularityNotificationMsg) {
-        std::cout << "Singularity notification received. " << std::endl;
-        setCartesianVelocityToZero();
-        atSingularity = singularityNotificationMsg.data;
-        jointInterpolationModeOn = true;
-}
-
-int main(int argc, char **argv) {
-	ros::init(argc, argv, "simple_arm_cartesian_trajectory_control");
-	ros::NodeHandle nodeHandle("~");
-	tf_listener = new tf::TransformListener();
-
-        double rate = 50; //50Hz
-	
-	double default_speed = 0.01;
-	
-	//topic to publish to
-	std::string cart_vel_topic = "cartesian_velocity_command"; 
-	
-	//topic to subscribe to: a new topic cartesian_trajectory_control_goal_position //two arguments: frame_id and the position coordinates PoseStamped.
-	std::string cart_traj_goal_pos_topic =  "cartesian_trajectory_control_goal_position"; 
-        std::string singularity_notification_topic = "singularity_notification";
-	
-         if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/root_name", root_name)) {
-		ROS_ERROR("No parameter for root_name specified");
-		return -1;
+        else
+        {
+          goalReached = true;
+          setCartesianVelocityToZero();
+          cartesianVelocityPublisher.publish(cartesianVelocityMsg);  
+          std::cout << "Goal Reached... Stopping motion..." << std::endl;    
         }
-
-        if (!nodeHandle.getParam("/raw_manipulation/simple_arm_cartesian_trajectory_control/tip_name", tooltip_name)) {
-		ROS_ERROR("No parameter for tip_name specified");
-		return -1;
-        }
-
-        //publisher registration
-        cartesianVelocityPublisher=nodeHandle.advertise<geometry_msgs::TwistStamped>(cart_vel_topic, 1);
-     
-        //subscriber registration
-	ros::Subscriber cart_traj_goal_subscriber = nodeHandle.subscribe(cart_traj_goal_pos_topic,
-			1, cartTrajGoalCallback);
-
-        //subscriber registration
-	ros::Subscriber singularity_notification_subscriber= nodeHandle.subscribe(singularity_notification_topic,
-			1, singularityNotificationCallback);
-
-        //unsigned int goalIndex = 0;
-	//loop with 50Hz
-
-	ros::Rate loop_rate(rate);
-
-	while (ros::ok()) {
-
-		ros::spinOnce();
-
-                //Check if near the goal; if so, reduce the velocity
-                //Check if we drifted from the line
-                //recompute the drift
-                
-		/*if(watchdog()) {
-
-		}*/
-
-                if (goalReceived && !goalReached)
-	        { 
-                     getCurrChainTipCartesianPosition(); 
-                     updateDistanceToGoal();
-                     if ( atSingularity && jointInterpolationModeOn )
-                     {
-                          //drive for 2cm through joint interpolation (joint position control)
-                          
-                     }  
-                     else {
-                     if ( distanceToGoal > goalTolerance )
-                     {
-                         if ( hasDriftedFromLine() )
-                         {
-                             compute3DLineParameters();
-                             computeVelocityVector();  
-                             std::cout << "Drifted too much from line. Recomputed trajectory and Cartesian velocities..." << std::endl;    
-                         }
-                         //publish cartesian velocity
-                         cartesianVelocityPublisher.publish(cartesianVelocityMsg);     
-                     }
-                     else
-		     {
-                         goalReached = true;
-                         //goalReceived = false;
-                         //stop motion
-                         setCartesianVelocityToZero();
-                         cartesianVelocityPublisher.publish(cartesianVelocityMsg);  
-                         std::cout << "Goal Reached... Stopping motion..." << std::endl;    
-                     }
-                     std::cout << "Cartesian velocity vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
-                     std::cout << "Goal index: " << currentGoalIndex << ". No. of goals: " << numberOfGoalPositions << std::endl;
-                     //check if we are near the goal position; if yes, slow down                         
-                  }
-                  }
-                  else if (goalReceived && goalReached)
-                  {
-                     goalReached = false;
-                     currentGoalIndex++;
-                     if ( currentGoalIndex == numberOfGoalPositions )
-                         goalReceived = false;
-                     else
-                     {  
-                         getCurrChainTipCartesianPosition(); 
-                         compute3DLineParameters(); //Line from currPosition to goalPosition
-                         computeVelocityVector();    
-                         cartesianVelocityPublisher.publish(cartesianVelocityMsg);  
-                     }
-                  }
-                
-		loop_rate.sleep();
-	}	
+        std::cout << "Cartesian vel vector: linear vel: " << cartesianVelocityMsg.twist.linear.x << " " << cartesianVelocityMsg.twist.linear.y << " " << cartesianVelocityMsg.twist.linear.z << std::endl;
+        std::cout << "Goal index: " << currentGoalIndex << ". No. of goals: " << numberOfGoalPositions << std::endl;
+        //TODO: check if we are near the goal position; if yes, slow down?                         
+      }
+    }
+    else if (goalReceived && goalReached)
+    {
+      goalReached = false;
+      currentGoalIndex++;
+      if ( currentGoalIndex == numberOfGoalPositions )
+        goalReceived = false;
+      else
+      {  
+        getCurrChainTipCartesianPosition(); 
+        compute3DLineParameters(); //Line from currPosition to goalPosition
+        computeVelocityVector();    
+        cartesianVelocityPublisher.publish(cartesianVelocityMsg);  
+      }
+    }
+    loop_rate.sleep();
+  }	
 }	
